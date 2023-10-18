@@ -1,6 +1,6 @@
 use std::{collections::HashSet, fs::File, io::BufReader, path::Path};
 
-use color_eyre::{eyre::Context, Result};
+use color_eyre::{eyre::{Context, bail}, Result};
 use itertools::Itertools;
 use qpm_package::{
     extensions::package_metadata::PackageMetadataExtensions,
@@ -30,7 +30,7 @@ pub trait SharedPackageConfigExtensions: Sized {
         repository: &impl Repository,
     ) -> Result<(Self, Vec<SharedPackageConfig>)>;
 
-    fn to_mod_json(self) -> ModJson;
+    fn verify(&self) -> color_eyre::Result<()>;
 }
 
 impl PackageConfigExtensions for PackageConfig {
@@ -70,6 +70,8 @@ impl PackageConfigExtensions for SharedPackageConfig {
 }
 
 impl SharedPackageConfigExtensions for SharedPackageConfig {
+
+
     fn resolve_from_package(
         config: PackageConfig,
         repository: &impl Repository,
@@ -216,5 +218,11 @@ impl SharedPackageConfigExtensions for SharedPackageConfig {
             library_files: libs,
             ..Default::default()
         }
+    fn verify(&self) -> color_eyre::Result<()> {
+        if self.config.info.additional_data.static_linking.is_some() {
+            bail!("Using deprecated feature static_linking! Please remove!");
+        }
+
+        Ok(())
     }
 }
